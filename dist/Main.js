@@ -2750,7 +2750,6 @@ PS.Main = (function () {
             };
         });
     };
-    var points = Data_Set.fromList(ordVertex())([ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]);
     var representatives = function (_343) {
         return function (_344) {
             if (_344.length === 0) {
@@ -2767,6 +2766,7 @@ PS.Main = (function () {
             throw new Error("Failed pattern match");
         };
     };
+    var vertices = Data_Set.fromList(ordVertex())([ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]);
     var ehj = new Data_Tuple.Tuple(vh, vj);
     var egj = new Data_Tuple.Tuple(vj, vg);
     var egi = new Data_Tuple.Tuple(vg, vi);
@@ -2814,16 +2814,18 @@ PS.Main = (function () {
             return React_DOM.line([ React_DOM.x1(Prelude.show(Prelude.showNumber())(cart1.x)), React_DOM.y1(Prelude.show(Prelude.showNumber())(cart1.y)), React_DOM.x2(Prelude.show(Prelude.showNumber())(cart2.x)), React_DOM.y2(Prelude.show(Prelude.showNumber())(cart2.y)), React_DOM.stroke("black") ])([  ]);
         };
     };
-    var displayPoint = function (p) {
+    var displayVertex = function (p) {
         var cart = polarToCartesian(center)(p);
         return React_DOM.circle([ React_DOM.cx(Prelude.show(Prelude.showNumber())(cart.x)), React_DOM.cy(Prelude.show(Prelude.showNumber())(cart.y)), React_DOM.r("5") ])([  ]);
     };
     var displayGraph = function (_341) {
-        return Prelude["++"](Data_Array.semigroupArray())(Prelude["<$>"](Data_Array.functorArray())(displayPoint)(Data_Set.toList(_341.value0)))(Prelude["<$>"](Data_Array.functorArray())(Data_Tuple.uncurry(displayEdge))(Data_Set.toList(_341.value1)));
+        return Prelude["++"](Data_Array.semigroupArray())(Prelude["<$>"](Data_Array.functorArray())(displayVertex)(Data_Set.toList(_341.value0)))(Prelude["<$>"](Data_Array.functorArray())(Data_Tuple.uncurry(displayEdge))(Data_Set.toList(_341.value1)));
     };
-    var graphFromCombination = function (basisElements) {
-        return function (props) {
-            return React_DOM.svg(Prelude["++"](Data_Array.semigroupArray())([ React_DOM.width("200"), React_DOM.height("200") ])(props))(displayGraph(new Graph(points, Data_Foldable.foldl(Data_Foldable.foldableArray())(Prelude["<>"](symmetricDifference(Data_Tuple.ordTuple(ordVertex())(ordVertex()))))(Data_Set.empty)(basisElements))));
+    var graphFromCombination = function (vertices_1) {
+        return function (basisElements) {
+            return function (props) {
+                return React_DOM.svg(Prelude["++"](Data_Array.semigroupArray())([ React_DOM.width("200"), React_DOM.height("200") ])(props))(displayGraph(new Graph(vertices_1, Data_Foldable.foldl(Data_Foldable.foldableArray())(Prelude["<>"](symmetricDifference(Data_Tuple.ordTuple(ordVertex())(ordVertex()))))(Data_Set.empty)(basisElements))));
+            };
         };
     };
     var basis = Prelude["<$>"](Data_Array.functorArray())(Data_Set.fromList(Data_Tuple.ordTuple(ordVertex())(ordVertex())))([ [ eab, ebc, ecd, ede, eae ], [ eab, ebc, ech, efh, eaf ], [ ebc, ecd, edi, egi, ebg ], [ ecd, ede, eej, ehj, ech ], [ ede, eae, eaf, efi, edi ], [ eae, eab, ebg, egj, eej ] ]);
@@ -2851,25 +2853,27 @@ PS.Main = (function () {
             };
         };
     };
-    var diagram = function (cards) {
-        return React.mkUI((function () {
-            var _931 = {};
-            for (var _932 in React.spec) {
-                if (React.spec.hasOwnProperty(_932)) {
-                    _931[_932] = React.spec[_932];
+    var diagram = function (vertices_1) {
+        return function (cards) {
+            return React.mkUI((function () {
+                var _931 = {};
+                for (var _932 in React.spec) {
+                    if (React.spec.hasOwnProperty(_932)) {
+                        _931[_932] = React.spec[_932];
+                    };
                 };
-            };
-            _931.getInitialState = Prelude["return"](Control_Monad_Eff.monadEff())({
-                selected: [  ], 
-                deck: cards
-            });
-            return _931;
-        })())(function __do() {
-            var _31 = React.readState();
-            return (Data_Array.length(_31.deck) <= 7 ? Prelude["return"](Control_Monad_Eff.monadEff())(React_DOM["div'"]([ React_DOM.text("You win! You emptied the deck.") ])) : Prelude["return"](Control_Monad_Eff.monadEff())(React_DOM.div([ React_DOM.className("container") ])([ graphFromCombination(_31.selected)([ React_DOM.className("preview") ]), React_DOM["div'"](Data_Array.map(function (card) {
-    return React_DOM.div([ React_DOM.className("component" + (arrayMember(Data_Set.eqSet(Data_Tuple.eqTuple(eqVertex())(eqVertex())))(_31.selected)(card) ? " included" : "")), React_DOM.onClick(updateElems(Data_Tuple.ordTuple(ordVertex())(ordVertex()))(xorElement(Data_Set.eqSet(Data_Tuple.eqTuple(eqVertex())(eqVertex())))(card)(_31.selected))) ])([ graphFromCombination([ card ])([  ]) ]);
+                _931.getInitialState = Prelude["return"](Control_Monad_Eff.monadEff())({
+                    selected: [  ], 
+                    deck: cards
+                });
+                return _931;
+            })())(function __do() {
+                var _31 = React.readState();
+                return (Data_Array.length(_31.deck) <= 7 ? Prelude["return"](Control_Monad_Eff.monadEff())(React_DOM["div'"]([ React_DOM.text("You win! You emptied the deck.") ])) : Prelude["return"](Control_Monad_Eff.monadEff())(React_DOM.div([ React_DOM.className("container") ])([ graphFromCombination(vertices_1)(_31.selected)([ React_DOM.className("preview") ]), React_DOM["div'"](Data_Array.map(function (card) {
+    return React_DOM.div([ React_DOM.className("component" + (arrayMember(Data_Set.eqSet(Data_Tuple.eqTuple(eqVertex())(eqVertex())))(_31.selected)(card) ? " included" : "")), React_DOM.onClick(updateElems(Data_Tuple.ordTuple(ordVertex())(ordVertex()))(xorElement(Data_Set.eqSet(Data_Tuple.eqTuple(eqVertex())(eqVertex())))(card)(_31.selected))) ])([ graphFromCombination(vertices_1)([ card ])([  ]) ]);
 })(Data_Array.take(7)(_31.deck))), React_DOM.button([ React_DOM.onClick(checkScore) ])([ React_DOM.text("Score") ]), React_DOM["div'"]([ React_DOM.text("Left in deck: " + Prelude.show(Prelude.showNumber())(Data_Array.length(_31.deck) - 7)) ]) ])))();
-        });
+            });
+        };
     };
     var allCards = function (basis_1) {
         var numResults = Math.pow(2)(Data_Array.length(basis_1)) - 1;
@@ -2878,7 +2882,7 @@ PS.Main = (function () {
     var main = function __do() {
         var _32 = Shuffle.shuffle(allCards(basis))();
         return (function () {
-            var component = React_DOM["div'"]([ diagram(_32)({}) ]);
+            var component = React_DOM["div'"]([ diagram(vertices)(_32)({}) ]);
             return React.renderToBody(component);
         })()();
     };
@@ -2901,7 +2905,7 @@ PS.Main = (function () {
         basisElement: basisElement, 
         displayGraph: displayGraph, 
         displayEdge: displayEdge, 
-        displayPoint: displayPoint, 
+        displayVertex: displayVertex, 
         basis: basis, 
         edges: edges, 
         eej: eej, 
@@ -2919,7 +2923,7 @@ PS.Main = (function () {
         ecd: ecd, 
         ebc: ebc, 
         eab: eab, 
-        points: points, 
+        vertices: vertices, 
         vj: vj, 
         vi: vi, 
         vh: vh, 

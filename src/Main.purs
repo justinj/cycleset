@@ -27,14 +27,14 @@ instance ordVertex :: Ord Vertex where
     EQ -> compare d1 d2
     other -> other
 
-type CartesianPoint = { x :: Number, y :: Number }
+type CartesianVertex = { x :: Number, y :: Number }
 
 center = {
   x: 100,
   y: 100
   }
 
-polarToCartesian :: CartesianPoint -> Vertex -> CartesianPoint
+polarToCartesian :: CartesianVertex -> Vertex -> CartesianVertex
 polarToCartesian center (Polar angle distance) = {
     x: center.x + (sin angle) * distance,
     y: center.y - (cos angle) * distance
@@ -51,8 +51,8 @@ vh = Polar (4*pi/5) 45
 vi = Polar (6*pi/5) 45
 vj = Polar (8*pi/5) 45
 
-points :: Set.Set Vertex
-points = Set.fromList [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]
+vertices :: Set.Set Vertex
+vertices = Set.fromList [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]
 
 type Edge = Tuple Vertex Vertex
 
@@ -85,8 +85,8 @@ basis = Set.fromList <$> [
   [eae, eab, ebg, egj, eej]
   ]
 
-displayPoint :: Vertex -> UI
-displayPoint p =
+displayVertex :: Vertex -> UI
+displayVertex p =
   circle [
     cx (show cart.x),
     cy (show cart.y),
@@ -112,7 +112,7 @@ data Graph = Graph (Set.Set Vertex) (Set.Set Edge)
 
 {-- displayGraph :: Graph -> [UI] --}
 displayGraph (Graph v e) =
-  ((displayPoint <$> Set.toList v) ++
+  ((displayVertex <$> Set.toList v) ++
   ((uncurry displayEdge) <$> Set.toList e))
 
 basisElement :: Number -> (Set.Set Edge)
@@ -120,12 +120,12 @@ basisElement n = maybe Set.empty id (basis !! n)
 
 type PropList = forall s dataAttrs ariaAttrs eff props state. [DOMProps s dataAttrs ariaAttrs eff props state]
 
-graphFromCombination :: [Set.Set Edge] -> PropList -> UI
-graphFromCombination basisElements props =
+graphFromCombination :: Set.Set Vertex -> [Set.Set Edge] -> PropList -> UI
+graphFromCombination vertices basisElements props =
   svg ([
     width "200",
     height "200"
-    ] ++ props) $ displayGraph (Graph points (foldl (<>) Set.empty basisElements))
+    ] ++ props) $ displayGraph (Graph vertices (foldl (<>) Set.empty basisElements))
 
 
 -- Set difference
@@ -174,8 +174,8 @@ pressKey e = do
   curState <- readState
   writeState { selected: [], deck: curState.deck }
 
-diagram :: forall props. [Set.Set Edge] -> (props -> React.UI)
-diagram cards = mkUI spec {
+diagram :: forall props. Set.Set Vertex -> [Set.Set Edge] -> (props -> React.UI)
+diagram vertices cards = mkUI spec {
     getInitialState = return {
       selected: [],
       deck: cards
@@ -190,14 +190,14 @@ diagram cards = mkUI spec {
       return $ div [
         className "container"
        ] [
-        graphFromCombination included [
+        graphFromCombination vertices included [
           className "preview"
           ],
         div' (map (\card -> div [
              className $ "component" ++ if arrayMember included card then " included" else "",
              onClick (updateElems (xorElement card included))
            ]
-        [graphFromCombination [card] []]) (take 7 state.deck)),
+        [graphFromCombination vertices [card] []]) (take 7 state.deck)),
         button [ 
           onClick checkScore
           ] [ 
@@ -232,5 +232,5 @@ allCards basis = map (representatives basis) (map numberToBinaryRep (1..numResul
 
 main = do
   shuffled <- shuffle $ allCards basis
-  let component = div' [diagram shuffled {}]
+  let component = div' [diagram vertices shuffled {}]
   renderToBody component
