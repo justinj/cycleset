@@ -2537,6 +2537,15 @@ PS.Graph = (function () {
             return new Polar(value0, value1);
         };
     };
+    function Cartesian(value0, value1) {
+        this.value0 = value0;
+        this.value1 = value1;
+    };
+    Cartesian.create = function (value0) {
+        return function (value1) {
+            return new Cartesian(value0, value1);
+        };
+    };
     function Graph(value0, value1, value2) {
         this.value0 = value0;
         this.value1 = value1;
@@ -2549,13 +2558,23 @@ PS.Graph = (function () {
             };
         };
     };
-    var polarToCartesian = function (_303) {
-        return function (_304) {
-            return {
-                x: _303.x + Math.sin(_304.value0) * _304.value1, 
-                y: _303.y - Math.cos(_304.value0) * _304.value1
-            };
+    var vertexYLoc = function (_304) {
+        if (_304 instanceof Cartesian) {
+            return _304.value1;
         };
+        if (_304 instanceof Polar) {
+            return Math.cos(_304.value0) * _304.value1;
+        };
+        throw new Error("Failed pattern match");
+    };
+    var vertexXLoc = function (_303) {
+        if (_303 instanceof Cartesian) {
+            return _303.value0;
+        };
+        if (_303 instanceof Polar) {
+            return Math.sin(_303.value0) * _303.value1;
+        };
+        throw new Error("Failed pattern match");
     };
     var graphBasis = function (_307) {
         return _307.value2;
@@ -2563,30 +2582,41 @@ PS.Graph = (function () {
     var eqVertex = function () {
         return new Prelude.Eq(function (_312) {
             return function (_313) {
-                return _312.value0 !== _313.value0 || _312.value1 !== _313.value1;
+                if (_312 instanceof Polar && _313 instanceof Polar) {
+                    return _312.value0 !== _313.value0 || _312.value1 !== _313.value1;
+                };
+                throw new Error("Failed pattern match");
             };
         }, function (_310) {
             return function (_311) {
-                return _310.value0 === _311.value0 && _310.value1 === _311.value1;
+                if (_310 instanceof Polar && _311 instanceof Polar) {
+                    return _310.value0 === _311.value0 && _310.value1 === _311.value1;
+                };
+                throw new Error("Failed pattern match");
             };
         });
     };
     var ordVertex = function () {
         return new Prelude.Ord(eqVertex, function (_314) {
             return function (_315) {
-                var _907 = Prelude.compare(Prelude.ordNumber())(_314.value0)(_315.value0);
-                if (_907 instanceof Prelude.EQ) {
-                    return Prelude.compare(Prelude.ordNumber())(_314.value1)(_315.value1);
+                if (_314 instanceof Polar && _315 instanceof Polar) {
+                    var _913 = Prelude.compare(Prelude.ordNumber())(_314.value0)(_315.value0);
+                    if (_913 instanceof Prelude.EQ) {
+                        return Prelude.compare(Prelude.ordNumber())(_314.value1)(_315.value1);
+                    };
+                    return _913;
                 };
-                return _907;
+                throw new Error("Failed pattern match");
             };
         });
     };
     return {
         Graph: Graph, 
         Polar: Polar, 
+        Cartesian: Cartesian, 
         graphBasis: graphBasis, 
-        polarToCartesian: polarToCartesian, 
+        vertexYLoc: vertexYLoc, 
+        vertexXLoc: vertexXLoc, 
         eqVertex: eqVertex, 
         ordVertex: ordVertex
     };
@@ -2737,10 +2767,6 @@ PS.Petersen = (function () {
     var eae = new Data_Tuple.Tuple(ve, va);
     var eab = new Data_Tuple.Tuple(va, vb);
     var edges = Data_Set.fromList(Data_Tuple.ordTuple(Graph.ordVertex())(Graph.ordVertex()))([ eab, ebc, ecd, ede, eae, efh, ehj, egj, egi, efi, eaf, ebg, ech, edi, eej ]);
-    var center = {
-        x: 100, 
-        y: 100
-    };
     var basis = Prelude["<$>"](Data_Array.functorArray())(Data_Set.fromList(Data_Tuple.ordTuple(Graph.ordVertex())(Graph.ordVertex())))([ [ eab, ebc, ecd, ede, eae ], [ eab, ebc, ech, efh, eaf ], [ ebc, ecd, edi, egi, ebg ], [ ecd, ede, eej, ehj, ech ], [ ede, eae, eaf, efi, edi ], [ eae, eab, ebg, egj, eej ] ]);
     var graph = new Graph.Graph(vertices, edges, basis);
     return {
@@ -2772,7 +2798,6 @@ PS.Petersen = (function () {
         vc: vc, 
         vb: vb, 
         va: va, 
-        center: center, 
         graph: graph
     };
 })();
@@ -2817,11 +2842,11 @@ PS.Shuffle = (function () {
                         return _352;
                     };
                     if (_350.length >= 1) {
-                        var _921 = _350.slice(1);
+                        var _927 = _350.slice(1);
                         var splicedInput = Data_Array.deleteAt(_350[0])(1)(_351);
                         var elem = fromJust(Data_Array["!!"](_351)(_350[0]));
                         var __tco__352 = Prelude[":"](elem)(_352);
-                        _350 = _921;
+                        _350 = _927;
                         _351 = splicedInput;
                         _352 = __tco__352;
                         continue tco;
@@ -2857,11 +2882,11 @@ PS.Main = (function () {
     var Data_Tuple = PS.Data_Tuple;
     var Graph = PS.Graph;
     var Math = PS.Math;
-    var Petersen = PS.Petersen;
-    var React_DOM = PS.React_DOM;
-    var Data_Array = PS.Data_Array;
     var Cube = PS.Cube;
+    var Data_Array = PS.Data_Array;
+    var React_DOM = PS.React_DOM;
     var Shuffle = PS.Shuffle;
+    var Petersen = PS.Petersen;
     var K5 = PS.K5;
     var $less$minus$greater = function (__dict_Ord_186) {
         return function (set1) {
@@ -2897,10 +2922,10 @@ PS.Main = (function () {
                 return Data_Set.empty;
             };
             if (_359.length >= 1) {
-                var _929 = _359.slice(1);
+                var _935 = _359.slice(1);
                 if (_360.length >= 1) {
-                    var _927 = _360.slice(1);
-                    var rest = representatives(_929)(_927);
+                    var _933 = _360.slice(1);
+                    var rest = representatives(_935)(_933);
                     return _360[0] ? Prelude["<>"](symmetricDifference(Data_Tuple.ordTuple(Graph.ordVertex())(Graph.ordVertex())))(_359[0])(rest) : rest;
                 };
             };
@@ -2928,27 +2953,7 @@ PS.Main = (function () {
         var first = !isEven(_358);
         return Prelude[":"](first)(numberToBinaryRep(rest));
     };
-    var displayVertex = function (p) {
-        var cart = Graph.polarToCartesian(Petersen.center)(p);
-        return React_DOM.circle([ React_DOM.cx(Prelude.show(Prelude.showNumber())(cart.x)), React_DOM.cy(Prelude.show(Prelude.showNumber())(cart.y)), React_DOM.r("5") ])([  ]);
-    };
-    var displayEdge = function (p1) {
-        return function (p2) {
-            var cart2 = Graph.polarToCartesian(Petersen.center)(p2);
-            var cart1 = Graph.polarToCartesian(Petersen.center)(p1);
-            return React_DOM.line([ React_DOM.x1(Prelude.show(Prelude.showNumber())(cart1.x)), React_DOM.y1(Prelude.show(Prelude.showNumber())(cart1.y)), React_DOM.x2(Prelude.show(Prelude.showNumber())(cart2.x)), React_DOM.y2(Prelude.show(Prelude.showNumber())(cart2.y)), React_DOM.stroke("black") ])([  ]);
-        };
-    };
-    var displayGraph = function (_354) {
-        return Prelude["++"](Data_Array.semigroupArray())(Prelude["<$>"](Data_Array.functorArray())(displayVertex)(Data_Set.toList(_354.value0)))(Prelude["<$>"](Data_Array.functorArray())(Data_Tuple.uncurry(displayEdge))(Data_Set.toList(_354.value1)));
-    };
-    var graphFromCombination = function (_355) {
-        return function (_356) {
-            return function (_357) {
-                return React_DOM.svg(Prelude["++"](Data_Array.semigroupArray())([ React_DOM.width("200"), React_DOM.height("200") ])(_357))(displayGraph(new Graph.Graph(_355.value0, Data_Foldable.foldl(Data_Foldable.foldableArray())(Prelude["<>"](symmetricDifference(Data_Tuple.ordTuple(Graph.ordVertex())(Graph.ordVertex()))))(Data_Set.empty)(_356), _355.value2)));
-            };
-        };
-    };
+    var graphSize = 200;
     var currentGraph = Cube.graph;
     var checkScore = function (e) {
         return function __do() {
@@ -2964,6 +2969,25 @@ PS.Main = (function () {
 }))();
         };
     };
+    var center = graphSize / 2;
+    var displayEdge = function (p1) {
+        return function (p2) {
+            return React_DOM.line([ React_DOM.x1(Prelude.show(Prelude.showNumber())(Graph.vertexXLoc(p1) + center)), React_DOM.y1(Prelude.show(Prelude.showNumber())(Graph.vertexYLoc(p1) + center)), React_DOM.x2(Prelude.show(Prelude.showNumber())(Graph.vertexXLoc(p2) + center)), React_DOM.y2(Prelude.show(Prelude.showNumber())(Graph.vertexYLoc(p2) + center)), React_DOM.stroke("black") ])([  ]);
+        };
+    };
+    var displayVertex = function (p) {
+        return React_DOM.circle([ React_DOM.cx(Prelude.show(Prelude.showNumber())(Graph.vertexXLoc(p) + center)), React_DOM.cy(Prelude.show(Prelude.showNumber())(Graph.vertexYLoc(p) + center)), React_DOM.r("5") ])([  ]);
+    };
+    var displayGraph = function (_354) {
+        return Prelude["++"](Data_Array.semigroupArray())(Prelude["<$>"](Data_Array.functorArray())(displayVertex)(Data_Set.toList(_354.value0)))(Prelude["<$>"](Data_Array.functorArray())(Data_Tuple.uncurry(displayEdge))(Data_Set.toList(_354.value1)));
+    };
+    var graphFromCombination = function (_355) {
+        return function (_356) {
+            return function (_357) {
+                return React_DOM.svg(Prelude["++"](Data_Array.semigroupArray())([ React_DOM.width(Prelude.show(Prelude.showNumber())(graphSize)), React_DOM.height(Prelude.show(Prelude.showNumber())(graphSize)) ])(_357))(displayGraph(new Graph.Graph(_355.value0, Data_Foldable.foldl(Data_Foldable.foldableArray())(Prelude["<>"](symmetricDifference(Data_Tuple.ordTuple(Graph.ordVertex())(Graph.ordVertex()))))(Data_Set.empty)(_356), _355.value2)));
+            };
+        };
+    };
     var arrayMember = function (__dict_Eq_189) {
         return function (lst) {
             return function (x) {
@@ -2974,11 +2998,11 @@ PS.Main = (function () {
     var xorElement = function (__dict_Eq_190) {
         return function (x) {
             return function (lst) {
-                var _943 = arrayMember(__dict_Eq_190)(lst)(x);
-                if (_943) {
+                var _949 = arrayMember(__dict_Eq_190)(lst)(x);
+                if (_949) {
                     return Data_Array["delete"](__dict_Eq_190)(x)(lst);
                 };
-                if (!_943) {
+                if (!_949) {
                     return Prelude[":"](x)(lst);
                 };
                 throw new Error("Failed pattern match");
@@ -3009,18 +3033,18 @@ PS.Main = (function () {
     };
     var diagram = function (cards) {
         return React.mkUI((function () {
-            var _946 = {};
-            for (var _947 in React.spec) {
-                if (React.spec.hasOwnProperty(_947)) {
-                    _946[_947] = React.spec[_947];
+            var _952 = {};
+            for (var _953 in React.spec) {
+                if (React.spec.hasOwnProperty(_953)) {
+                    _952[_953] = React.spec[_953];
                 };
             };
-            _946.getInitialState = Prelude["return"](Control_Monad_Eff.monadEff())({
+            _952.getInitialState = Prelude["return"](Control_Monad_Eff.monadEff())({
                 selected: [  ], 
                 deck: cards, 
                 graph: Cube.graph
             });
-            return _946;
+            return _952;
         })())(function __do() {
             var _33 = React.readState();
             return (function () {
@@ -3060,6 +3084,8 @@ PS.Main = (function () {
         displayGraph: displayGraph, 
         displayEdge: displayEdge, 
         displayVertex: displayVertex, 
+        center: center, 
+        graphSize: graphSize, 
         symmetricDifference: symmetricDifference
     };
 })();

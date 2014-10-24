@@ -7,7 +7,9 @@ import qualified Data.Set as Set
 
 type Edge = Tuple Vertex Vertex
 data Vertex = Polar Number Number
--- Vertex set, Edge set, basis.
+            | Cartesian Number Number
+-- Vertex set, Edge set, basis, center
+
 data Graph = Graph (Set.Set Vertex) (Set.Set Edge) [Set.Set Edge]
 
 type CartesianVertex = { x :: Number, y :: Number }
@@ -24,11 +26,13 @@ instance ordVertex :: Ord Vertex where
     EQ -> compare d1 d2
     other -> other
 
-polarToCartesian :: CartesianVertex -> Vertex -> CartesianVertex
-polarToCartesian center (Polar angle distance) = {
-    x: center.x + (sin angle) * distance,
-    y: center.y - (cos angle) * distance
-  }
+vertexXLoc :: Vertex -> Number
+vertexXLoc (Cartesian x _) = x
+vertexXLoc (Polar angle dist) = (sin angle) * dist
+
+vertexYLoc :: Vertex -> Number
+vertexYLoc (Cartesian _ y) = y
+vertexYLoc (Polar angle dist) = (cos angle) * dist
 
 graphVertices (Graph vertices _ _) = vertices
 graphEdges (Graph _ edges _) = edges

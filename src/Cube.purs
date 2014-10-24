@@ -7,11 +7,6 @@ import qualified Data.Set as Set
 
 graph = Graph vertices edges basis
 
-center = {
-  x: 100,
-  y: 100
-  }
-
 va = Polar (pi/4 + 0*(pi/2)) 85
 vb = Polar (pi/4 + 1*(pi/2)) 85
 vc = Polar (pi/4 + 2*(pi/2)) 85

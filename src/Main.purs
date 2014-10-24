@@ -18,28 +18,29 @@ import qualified Petersen as Petersen
 import qualified Cube as Cube
 import qualified K5 as K5
 
+graphSize :: Number
+graphSize = 200
+
+center :: Number
+center = graphSize / 2
+
 displayVertex :: Vertex -> UI
 displayVertex p =
   circle [
-    cx (show cart.x),
-    cy (show cart.y),
+    cx (show (vertexXLoc p + center)),
+    cy (show (vertexYLoc p + center)),
     r "5"
   ] [ ]
-    where
-      cart = polarToCartesian Petersen.center p
 
 displayEdge :: Vertex -> Vertex -> UI
 displayEdge p1 p2 =
   line [
-    x1 (show cart1.x),
-    y1 (show cart1.y),
-    x2 (show cart2.x),
-    y2 (show cart2.y),
+    x1 (show (vertexXLoc p1 + center)),
+    y1 (show (vertexYLoc p1 + center)),
+    x2 (show (vertexXLoc p2 + center)),
+    y2 (show (vertexYLoc p2 + center)),
     stroke "black"
   ] [ ]
-  where 
-    cart1 = polarToCartesian Petersen.center p1
-    cart2 = polarToCartesian Petersen.center p2
 
 displayGraph (Graph v e _) =
   ((displayVertex <$> Set.toList v) ++
@@ -50,8 +51,8 @@ type PropList = forall s dataAttrs ariaAttrs eff props state. [DOMProps s dataAt
 graphFromCombination :: Graph -> [Set.Set Edge] -> PropList -> UI
 graphFromCombination (Graph vertices _ basis) basisElements props =
   svg ([
-    width "200",
-    height "200"
+    width (show graphSize),
+    height (show graphSize)
     ] ++ props) $ displayGraph (Graph vertices (foldl (<>) Set.empty basisElements) basis)
 
 
