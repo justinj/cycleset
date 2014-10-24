@@ -13,77 +13,10 @@ import Data.Maybe.Unsafe (fromJust)
 import Data.Monoid
 import Data.Foldable (foldl)
 import Shuffle
-
-data Vertex = Polar Number Number
-instance showVertex :: Show Vertex where
-  show (Polar a b) = "(Polar " ++ (show a) ++ " " ++ (show b) ++ ")"
-
-instance eqVertex :: Eq Vertex where
-  (==) (Polar a1 d1) (Polar a2 d2) = (a1 == a2 && d1 == d2)
-  (/=) (Polar a1 d1) (Polar a2 d2) = (a1 /= a2 || d1 /= d2)
-
-instance ordVertex :: Ord Vertex where
-  compare (Polar a1 d1) (Polar a2 d2) = case compare a1 a2 of
-    EQ -> compare d1 d2
-    other -> other
-
-type CartesianVertex = { x :: Number, y :: Number }
-
-center = {
-  x: 100,
-  y: 100
-  }
-
-polarToCartesian :: CartesianVertex -> Vertex -> CartesianVertex
-polarToCartesian center (Polar angle distance) = {
-    x: center.x + (sin angle) * distance,
-    y: center.y - (cos angle) * distance
-  }
-
-va = Polar (0*pi/5) 85
-vb = Polar (2*pi/5) 85
-vc = Polar (4*pi/5) 85
-vd = Polar (6*pi/5) 85
-ve = Polar (8*pi/5) 85
-vf = Polar (0*pi/5) 45
-vg = Polar (2*pi/5) 45
-vh = Polar (4*pi/5) 45
-vi = Polar (6*pi/5) 45
-vj = Polar (8*pi/5) 45
-
-vertices :: Set.Set Vertex
-vertices = Set.fromList [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]
-
-type Edge = Tuple Vertex Vertex
-
-eab = Tuple va vb
-ebc = Tuple vb vc
-ecd = Tuple vc vd
-ede = Tuple vd ve
-eae = Tuple ve va
-efh = Tuple vf vh
-ehj = Tuple vh vj
-egj = Tuple vj vg
-egi = Tuple vg vi
-efi = Tuple vi vf
-eaf = Tuple va vf
-ebg = Tuple vb vg
-ech = Tuple vc vh
-edi = Tuple vd vi
-eej = Tuple ve vj
-
-edges :: Set.Set Edge
-edges = Set.fromList [ eab, ebc, ecd, ede, eae, efh, ehj, egj, egi, efi, eaf, ebg, ech, edi, eej ]
-
-basis :: [Set.Set Edge]
-basis = Set.fromList <$> [
-  [eab, ebc, ecd, ede, eae],
-  [eab, ebc, ech, efh, eaf],
-  [ebc, ecd, edi, egi, ebg],
-  [ecd, ede, eej, ehj, ech],
-  [ede, eae, eaf, efi, edi],
-  [eae, eab, ebg, egj, eej]
-  ]
+import Graph
+import qualified Petersen as Petersen
+import qualified Cube as Cube
+import qualified K5 as K5
 
 displayVertex :: Vertex -> UI
 displayVertex p =
@@ -93,7 +26,7 @@ displayVertex p =
     r "5"
   ] [ ]
     where
-      cart = polarToCartesian center p
+      cart = polarToCartesian Petersen.center p
 
 displayEdge :: Vertex -> Vertex -> UI
 displayEdge p1 p2 =
@@ -105,27 +38,21 @@ displayEdge p1 p2 =
     stroke "black"
   ] [ ]
   where 
-    cart1 = polarToCartesian center p1
-    cart2 = polarToCartesian center p2
+    cart1 = polarToCartesian Petersen.center p1
+    cart2 = polarToCartesian Petersen.center p2
 
-data Graph = Graph (Set.Set Vertex) (Set.Set Edge)
-
-{-- displayGraph :: Graph -> [UI] --}
-displayGraph (Graph v e) =
+displayGraph (Graph v e _) =
   ((displayVertex <$> Set.toList v) ++
   ((uncurry displayEdge) <$> Set.toList e))
 
-basisElement :: Number -> (Set.Set Edge)
-basisElement n = maybe Set.empty id (basis !! n)
-
 type PropList = forall s dataAttrs ariaAttrs eff props state. [DOMProps s dataAttrs ariaAttrs eff props state]
 
-graphFromCombination :: Set.Set Vertex -> [Set.Set Edge] -> PropList -> UI
-graphFromCombination vertices basisElements props =
+graphFromCombination :: Graph -> [Set.Set Edge] -> PropList -> UI
+graphFromCombination (Graph vertices _ basis) basisElements props =
   svg ([
     width "200",
     height "200"
-    ] ++ props) $ displayGraph (Graph vertices (foldl (<>) Set.empty basisElements))
+    ] ++ props) $ displayGraph (Graph vertices (foldl (<>) Set.empty basisElements) basis)
 
 
 -- Set difference
@@ -150,63 +77,96 @@ updateElems :: forall a t58 t65 t69 t75. (Ord a) => [Set.Set a] ->
                t58 -> Control.Monad.Eff.Eff
                  (state :: React.ReactState (write :: React.WriteAllowed,
                                              read :: React.ReadAllowed | t75)
-                                             { selected :: [Set.Set a], deck :: [Set.Set a] } | t65)
-                                             { selected :: [Set.Set a], deck :: [Set.Set a] }
+                                             { selected :: [Set.Set a], deck :: [Set.Set a], graph
+                                             :: Graph } | t65)
+                                             { selected :: [Set.Set a], deck :: [Set.Set a], graph
+                                             :: Graph }
 updateElems elems e = do
   curState <- readState
   let oldDeck = curState.deck
-  writeState { selected: elems, deck: oldDeck }
+  writeState { selected: elems, deck: oldDeck, graph: curState.graph }
 
 checkScore :: forall t58 t65 t69 t75. t58 -> Control.Monad.Eff.Eff
                  (state :: React.ReactState (write :: React.WriteAllowed,
                                              read :: React.ReadAllowed | t75)
-                                             { selected :: [Set.Set Edge], deck :: [Set.Set Edge] } | t65)
-                                             { selected :: [Set.Set Edge], deck :: [Set.Set Edge] }
+                                             { selected :: [Set.Set Edge], deck :: [Set.Set Edge],
+                                             graph :: Graph } | t65)
+                                             { selected :: [Set.Set Edge], deck :: [Set.Set Edge],
+                                             graph :: Graph }
+
 checkScore e = do
   curState <- readState
   let oldDeck = curState.deck
   let selected = curState.selected
   if Set.isEmpty $ foldl (<>) Set.empty selected then
-    writeState { selected: [], deck: oldDeck \\ selected } else
-    writeState { selected: selected, deck: oldDeck }
+    writeState { selected: [], deck: oldDeck \\ selected, graph: curState.graph } else
+    writeState { selected: selected, deck: oldDeck, graph: curState.graph }
 
 pressKey e = do
   curState <- readState
-  writeState { selected: [], deck: curState.deck }
+  writeState { selected: [], deck: curState.deck, graph: curState.graph }
 
-diagram :: forall props. Set.Set Vertex -> [Set.Set Edge] -> (props -> React.UI)
-diagram vertices cards = mkUI spec {
+changeGraphTo graph e = do
+  curState <- readState
+  shuffled <- shuffle $ allCards (graphBasis graph)
+  writeState { selected: [], deck: shuffled, graph: graph }
+
+diagram :: forall props. [Set.Set Edge] -> (props -> React.UI)
+diagram cards = mkUI spec {
     getInitialState = return {
       selected: [],
-      deck: cards
+      deck: cards,
+      graph: Cube.graph
     }
   } do 
     state <- readState
+    let basis = graphBasis state.graph
+    let dimension = length basis
+    let handSize = dimension + 1
     let included = state.selected
-    if length state.deck <= 7 then
+    if length state.deck <= handSize then
       return $ div' [
           text "You win! You emptied the deck."
         ] else
       return $ div [
         className "container"
-       ] [
-        graphFromCombination vertices included [
+        ] [
+          div [
+        className "main-game"
+        ] [
+        graphFromCombination state.graph included [
           className "preview"
           ],
         div' (map (\card -> div [
-             className $ "component" ++ if arrayMember included card then " included" else "",
+             className $ "component " ++ if arrayMember included card then "included" else "not-included",
              onClick (updateElems (xorElement card included))
-           ]
-        [graphFromCombination vertices [card] []]) (take 7 state.deck)),
+             ] [
+          graphFromCombination state.graph [card] []]) (take handSize state.deck)),
         button [ 
           onClick checkScore
           ] [ 
           text "Score"
-        ],
+          ],
         div' [
-          text $ ("Left in deck: " ++ (show $ (length state.deck) - 7))
+          text $ ("Left in deck: " ++ (show $ length state.deck - handSize))
+          ]
+       ],
+        div' [
+           graphButton Cube.graph "3-Dimensional Cube",
+           graphButton Petersen.graph "Petersen Graph",
+           graphButton K5.graph "Complete Graph on 5 Vertices (K5)"
           ]
        ]
+
+graphButton graph name =
+  div [
+      className "button-container"
+    ] [
+    span [
+      className "graph-button",
+      onClick $ changeGraphTo graph
+      ] [ text name ]
+    ]
 
 isEven :: Number -> Boolean
 isEven n = (n & 1) == 0
@@ -230,7 +190,9 @@ allCards :: [Set.Set Edge] -> [Set.Set Edge]
 allCards basis = map (representatives basis) (map numberToBinaryRep (1..numResults))
   where numResults = (pow 2 (length basis)) - 1
 
+currentGraph = Cube.graph
+
 main = do
-  shuffled <- shuffle $ allCards basis
-  let component = div' [diagram vertices shuffled {}]
+  shuffled <- shuffle $ allCards (graphBasis currentGraph)
+  let component = div' [diagram shuffled {}]
   renderToBody component
